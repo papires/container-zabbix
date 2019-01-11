@@ -1,0 +1,56 @@
+version: "3.0"
+services:
+  zbx-db:
+    container_name: zbx-psql
+    image: postgres:9.4
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=zabbix 
+      - POSTGRES_USER=zabbix 
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - /containers/pgsql/dados:/var/lib/postgresql:rw
+    networks:
+      vpcbr:
+        ipv4_address: 192.168.200.100
+
+  zbx-server:
+    container_name: zbx-server-pgsql
+    image: zabbix/zabbix-server-pgsql:centos-4.0.3
+    environment:
+      - DB_SERVER_HOST=192.168.200.100 
+      - POSTGRES_DB=zabbix 
+      - POSTGRES_USER=zabbix 
+      - POSTGRES_PASSWORD=password
+    networks:
+      vpcbr:
+        ipv4_address: 192.168.200.110   
+    depends_on:
+      - zbx-db
+
+  zbx-web:
+    container_name: zbx-web
+    image: zabbix/zabbix-web-apache-pgsql:centos-latest
+    ports:
+      - 80:80
+    environment:
+      - DB_SERVER_HOST=192.168.200.100 
+      - POSTGRES_USER=zabbix 
+      - POSTGRES_PASSWORD=password
+      - ZBX_SERVER_HOST=192.168.200.110      
+    networks:
+      vpcbr:
+        ipv4_address: 192.168.200.111  
+    depends_on:
+      - zbx-db
+      - zbx-server
+
+
+networks:
+    vpcbr:
+      driver: bridge
+      ipam:
+        config:
+          - subnet: 192.168.200.0/24
+          
